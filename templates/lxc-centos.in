@@ -210,6 +210,7 @@ EOF
 
     rm -f $REPO_FILE
     $YUM clean packages
+    rm -rf $INSTALL_ROOT/var/cache/yum/*
     if [ ! -e $INSTALL_ROOT/var/lib/rpm/Packages -a -e $INSTALL_ROOT/$HOME/.rpmdb/Packages ]; then
         mv $INSTALL_ROOT/$HOME/.rpmdb/[A-Z]* $INSTALL_ROOT/var/lib/rpm/
         rm -rf $INSTALL_ROOT/$HOME/.rpmdb

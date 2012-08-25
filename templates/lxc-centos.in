@@ -161,6 +161,7 @@ EOF
     mknod -m 666 $INSTALL_ROOT/dev/urandom c 1 9
 
     $YUM install $PKG_LIST
+    $YUM clean packages
 
     if [ $? -ne 0 ]; then
 	echo "Failed to download the rootfs, aborting."
@@ -200,6 +201,7 @@ update_centos()
 {
     YUM="chroot $cache/rootfs yum -y --nogpgcheck"
     $YUM update
+    $YUM clean packages
 }
 
 install_centos()

@@ -122,7 +122,9 @@ configure_centos_init()
 {
     sed -i 's|.sbin.start_udev||' ${rootfs_path}/etc/rc.sysinit
     sed -i 's|.sbin.start_udev||' ${rootfs_path}/etc/rc.d/rc.sysinit
-    chroot ${rootfs_path} chkconfig udev-post off
+    if [ "$release" = "6" ]; then 
+        chroot ${rootfs_path} chkconfig udev-post off
+    fi
     chroot ${rootfs_path} chkconfig network on
 }
 
@@ -161,23 +163,23 @@ EOF
     mknod -m 666 $INSTALL_ROOT/dev/urandom c 1 9
 
     $YUM install $PKG_LIST
-    $YUM clean packages
 
     if [ $? -ne 0 ]; then
-	echo "Failed to download the rootfs, aborting."
-	return 1
-    fi
-
-    rm -f $REPO_FILE
-    if [ -d $INSTALL_ROOT/$HOME/.rpmdb ]; then
-        mv $INSTALL_ROOT/$HOME/.rpmdb/* $INSTALL_ROOT/var/lib/rpm/
-        rm -f $INSTALL_ROOT/var/lib/rpm/__db.*
-        chroot $INSTALL_ROOT rpm --rebuilddb
-        rm -rf $INSTALL_ROOT/$HOME/.rpmdb
+        echo "Failed to download the rootfs, aborting."
+        return 1
     fi
 
     # use same nameservers as hosts, needed for "yum update later"
     cp -a /etc/resolv.conf $INSTALL_ROOT/etc/
+
+    rm -f $REPO_FILE
+    $YUM clean packages
+    if [ ! -e $INSTALL_ROOT/var/lib/rpm/Packages -a -e $INSTALL_ROOT/$HOME/.rpmdb/Packages ]; then
+        mv $INSTALL_ROOT/$HOME/.rpmdb/[A-Z]* $INSTALL_ROOT/var/lib/rpm/
+        rm -rf $INSTALL_ROOT/$HOME/.rpmdb
+        chroot $INSTALL_ROOT rpm --rebuilddb
+        chroot $INSTALL_ROOT rpm --quiet -q yum
+    fi
 
     mv "$INSTALL_ROOT" "$cache/rootfs"
     echo "Download complete."
@@ -201,6 +203,9 @@ update_centos()
 {
     YUM="chroot $cache/rootfs yum -y --nogpgcheck"
     $YUM update
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
     $YUM clean packages
 }
 

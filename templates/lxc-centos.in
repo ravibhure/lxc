@@ -192,9 +192,22 @@ EOF
     # use same nameservers as hosts, needed for "yum update later"
     cp /etc/resolv.conf $INSTALL_ROOT/etc/
 
-    # need to redo the process for centos5 using the newly-installed yum
-    # due to rpmdb version difference
-    if [ "$release" = "5" ]; then
+    # check whether rpmdb is under $HOME
+    if [ ! -e $INSTALL_ROOT/var/lib/rpm/Packages -a -e $INSTALL_ROOT/$HOME/.rpmdb/Packages ]; then
+        echo "Fixing rpmdb location ..."
+        mv $INSTALL_ROOT/$HOME/.rpmdb/[A-Z]* $INSTALL_ROOT/var/lib/rpm/
+        rm -rf $INSTALL_ROOT/$HOME/.rpmdb
+        chroot $INSTALL_ROOT rpm --rebuilddb 2>/dev/null
+    fi
+
+    # check whether rpmdb version is correct
+    chroot $INSTALL_ROOT rpm --quiet -q yum 2>/dev/null
+    ret=$?
+    
+    # if "rpm -q" doesn't work due to rpmdb version difference,
+    # then we need to redo the process using the newly-installed yum
+    if [ $ret -gt 0 ]; then
+        echo "Reinstalling packages ..."
         mv $REPO_FILE $REPO_FILE.tmp
         mkdir $INSTALL_ROOT/etc/yum.repos.disabled
         mv $INSTALL_ROOT/etc/yum.repos.d/*.repo $INSTALL_ROOT/etc/yum.repos.disabled/
@@ -217,14 +230,7 @@ EOF
     fi
 
     rm -f $REPO_FILE
-    $YUM clean packages
     rm -rf $INSTALL_ROOT/var/cache/yum/*
-    if [ ! -e $INSTALL_ROOT/var/lib/rpm/Packages -a -e $INSTALL_ROOT/$HOME/.rpmdb/Packages ]; then
-        mv $INSTALL_ROOT/$HOME/.rpmdb/[A-Z]* $INSTALL_ROOT/var/lib/rpm/
-        rm -rf $INSTALL_ROOT/$HOME/.rpmdb
-        chroot $INSTALL_ROOT rpm --rebuilddb
-        chroot $INSTALL_ROOT rpm --quiet -q yum
-    fi
 
     mv "$INSTALL_ROOT" "$cache/rootfs"
     echo "Download complete."

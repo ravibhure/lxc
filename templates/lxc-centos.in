@@ -311,12 +311,17 @@ lxc.tty = 4
 lxc.pts = 1024
 lxc.rootfs = $rootfs_path
 lxc.mount  = $config_path/fstab
-#example networking setup, uncomment to enable
+
+# example simple networking setup, uncomment to enable
 #lxc.network.type = $lxc_network_type
 #lxc.network.flags = up
 #lxc.network.link = $lxc_network_link
 #lxc.network.name = eth0
-#lxc.network.mtu = 1500
+# additional example for veth network type, static MAC address,
+# and persistent veth device name on host side
+#lxc.network.hwaddr = 00:16:3e:77:52:20
+#lxc.network.veth.pair = v-$name-e0
+
 #cgroups
 lxc.cgroup.devices.deny = a
 # /dev/null and zero
